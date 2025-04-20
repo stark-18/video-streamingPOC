@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs";
 import {exec} from "child_process"; //watch out
-
+import { stderr,stdout } from "process";
 
 const app = express();
 
@@ -40,7 +40,7 @@ const upload = multer({storage: storage});
 app.post("/upload", upload.single("file"), (req, res) => {
     // res.json({ message: "Video uploaded successfully" });
     const lessonId = uuidv4();
-    const videoPath = req.file.path;
+    const videoPath = req.file.path ;
     const outputPath = `./uploads/courses/${lessonId}`;
     const hlspath = `${outputPath}/index.m3u8`;
     console.log("hlspath", hlspath);
@@ -73,4 +73,3 @@ app.get('/', (req, res) => {
 app.listen(8000, () => {
     console.log("Server is running on port 8000");
 });
-
