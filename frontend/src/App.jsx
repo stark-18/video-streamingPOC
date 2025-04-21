@@ -38,7 +38,13 @@ function App() {
     <>
       <div>
         <h1>Video Player</h1>
+
       </div>
+      <VideoPlayer
+      options = {videoPlayerOptions}
+      onReady = {handlePlayerReady}
+      
+      />
 
     </>
   )
