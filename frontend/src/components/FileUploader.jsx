@@ -61,8 +61,8 @@ const FileUploader = ({ onUploadSuccess }) => {
     formData.append('file', file);
 
     try {
-      // Use the simplified upload endpoint
-      const response = await axios.post('http://localhost:8000/upload/simple', formData, {
+      // Use the upload endpoint
+      const response = await axios.post('http://localhost:8000/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -71,7 +71,7 @@ const FileUploader = ({ onUploadSuccess }) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
-        timeout: 60000 // 1 minute timeout should be enough for the simplified endpoint
+        timeout: 300000 // 5 minutes timeout for video conversion
       });
       
       setLoading(false);
