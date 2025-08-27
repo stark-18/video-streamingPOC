@@ -21,7 +21,7 @@ const VideoList = ({ onSelectVideo }) => {
 
   const fetchVideos = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/videos');
+      const response = await axios.get('https://videostreamingpoc.onrender.com/videos');
       setVideos(response.data);
     } catch (err) {
       console.error('Error fetching videos:', err);
