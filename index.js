@@ -8,6 +8,15 @@ import {exec} from "child_process"; //watch out
 import { stderr,stdout } from "process";
 
 const app = express();
+// Ensure correct protocol/host detection behind proxies (e.g., Render, Netlify)
+app.set('trust proxy', 1);
+
+// Helper to build absolute URLs based on the incoming request
+function getBaseUrl(req) {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    return `${protocol}://${host}`;
+}
 
 app.use(cors({
     origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://videostreamingpoc.onrender.com"],
@@ -94,10 +103,11 @@ app.post("/upload", upload.single("file"), (req, res) => {
         
         console.log('File uploaded successfully (without conversion)');
         console.log('Sending response...');
+        const baseUrl = getBaseUrl(req);
         res.json({
             message: "Video uploaded successfully",
             lessonId: lessonId,
-            videoUrl: `http://localhost:8000/uploads/courses/${lessonId}/original.mp4`
+            videoUrl: `${baseUrl}/uploads/courses/${lessonId}/original.mp4`
         });
         console.log('Response sent');
         
@@ -131,9 +141,10 @@ app.get('/videos', (req, res) => {
                     // Check for either HLS file or original MP4 file
                     if (fs.existsSync(m3u8Path) || fs.existsSync(originalPath)) {
                         // Determine video URL based on available files
-                        let videoUrl = `http://localhost:8000/uploads/courses/${folder}/index.m3u8`;
+                        const baseUrl = getBaseUrl(req);
+                        let videoUrl = `${baseUrl}/uploads/courses/${folder}/index.m3u8`;
                         if (!fs.existsSync(m3u8Path) && fs.existsSync(originalPath)) {
-                            videoUrl = `http://localhost:8000/uploads/courses/${folder}/original.mp4`;
+                            videoUrl = `${baseUrl}/uploads/courses/${folder}/original.mp4`;
                         }
                         
                         let videoInfo = {

@@ -21,10 +21,20 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
+// Determine API base URL
+// - Dev: http://localhost:8000
+// - Prod: use VITE_API_BASE if provided (recommended for separate domains), otherwise same-origin
+const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+  ? 'http://localhost:8000'
+  : (import.meta.env?.VITE_API_BASE || '');
+
 const FileUploader = ({ onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('info');
   const [progress, setProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -33,9 +43,11 @@ const FileUploader = ({ onUploadSuccess }) => {
     const selectedFile = event.target.files[0];
     setFile(selectedFile);
     setError('');
+    setSuccessMessage('');
     setProgress(0);
     setUploadComplete(false);
     setAlertOpen(false);
+    setAlertMessage('');
   };
 
   const handleUpload = async () => {
@@ -55,14 +67,17 @@ const FileUploader = ({ onUploadSuccess }) => {
     setLoading(true);
     setProgress(0);
     setError('');
+    setSuccessMessage('');
     setAlertOpen(false);
+    setAlertMessage('');
+    setAlertSeverity('info');
     
     const formData = new FormData();
     formData.append('file', file);
 
     try {
       // Use the upload endpoint
-      const response = await axios.post('https://videostreamingpoc.onrender.com/upload', formData, {
+      const response = await axios.post(`${API_BASE}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -77,6 +92,14 @@ const FileUploader = ({ onUploadSuccess }) => {
       setLoading(false);
       setUploadComplete(true);
       
+      // Show success message
+      setError('');
+      const successText = 'Video uploaded successfully! Check the library to view your video.';
+      setSuccessMessage(successText);
+      setAlertMessage(successText);
+      setAlertSeverity('success');
+      setAlertOpen(true);
+      
       if (response.data.videoUrl) {
         onUploadSuccess(response.data.videoUrl);
       }
@@ -85,16 +108,32 @@ const FileUploader = ({ onUploadSuccess }) => {
       console.error('Upload error:', err);
       
       // Provide more descriptive error messages
-      if (err.response) {
+      if (err.code === 'ECONNABORTED' || (err.message && err.message.includes('timeout'))) {
+        // Request timed out - this might mean the video is still processing
+        const msg = 'Upload request timed out. Your video may still be processing. Check the library in a few minutes.';
+        setError(msg);
+        setAlertMessage(msg);
+        setAlertSeverity('warning');
+      } else if (err.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        setError(`Server error: ${err.response.data.error || err.response.statusText}`);
+        const msg = `Server error: ${err.response.data?.error || err.response.statusText}`;
+        setError(msg);
+        setAlertMessage(msg);
+        setAlertSeverity('error');
       } else if (err.request) {
         // The request was made but no response was received
-        setError('No response from server. Please try a smaller video file.');
+        // This could mean the server is processing the video
+        const msg = 'Upload request sent but no immediate response. Your video may still be processing. Check the library in a few minutes.';
+        setError(msg);
+        setAlertMessage(msg);
+        setAlertSeverity('warning');
       } else {
         // Something happened in setting up the request that triggered an Error
-        setError(`Error: ${err.message}`);
+        const msg = `Error: ${err.message}`;
+        setError(msg);
+        setAlertMessage(msg);
+        setAlertSeverity('error');
       }
       
       setAlertOpen(true);
@@ -104,6 +143,7 @@ const FileUploader = ({ onUploadSuccess }) => {
   const clearFile = () => {
     setFile(null);
     setError('');
+    setSuccessMessage('');
     setProgress(0);
     setUploadComplete(false);
     setAlertOpen(false);
@@ -143,7 +183,7 @@ const FileUploader = ({ onUploadSuccess }) => {
       
       <Collapse in={alertOpen}>
         <Alert 
-          severity="error" 
+          severity={alertSeverity}
           sx={{ mb: 3 }}
           action={
             <IconButton
@@ -156,7 +196,7 @@ const FileUploader = ({ onUploadSuccess }) => {
             </IconButton>
           }
         >
-          {error}
+          {alertMessage || error || successMessage}
         </Alert>
       </Collapse>
       

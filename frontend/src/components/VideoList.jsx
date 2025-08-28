@@ -16,12 +16,16 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
+const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+  ? 'http://localhost:8000'
+  : (import.meta.env?.VITE_API_BASE || '');
+
 const VideoList = ({ onSelectVideo }) => {
   const [videos, setVideos] = useState([]);
 
   const fetchVideos = async () => {
     try {
-      const response = await axios.get('https://videostreamingpoc.onrender.com/videos');
+      const response = await axios.get(`${API_BASE}/videos`);
       setVideos(response.data);
     } catch (err) {
       console.error('Error fetching videos:', err);
